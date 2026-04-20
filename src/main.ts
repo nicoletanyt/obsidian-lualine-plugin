@@ -1,80 +1,214 @@
-import {App, Editor, MarkdownView, Modal, Notice, Plugin} from 'obsidian';
-import {DEFAULT_SETTINGS, MyPluginSettings, SampleSettingTab} from "./settings";
+import { App, MarkdownView, Modal, Plugin, WorkspaceLeaf } from "obsidian";
+import {
+	DEFAULT_SETTINGS,
+	LualineSettingsTab,
+	PluginSettings,
+} from "./settings";
+import { LualineItem } from "types";
 
 // Remember to rename these classes and interfaces!
 
-export default class MyPlugin extends Plugin {
-	settings: MyPluginSettings;
+export default class LualinePlugin extends Plugin {
+	settings: PluginSettings;
+
+	componentEls: Map<LualineItem, HTMLElement> = new Map();
 
 	async onload() {
 		await this.loadSettings();
 
-		// This creates an icon in the left ribbon.
-		this.addRibbonIcon('dice', 'Sample', (evt: MouseEvent) => {
-			// Called when the user clicks the icon.
-			new Notice('This is a notice!');
-		});
-
-		// This adds a status bar item to the bottom of the app. Does not work on mobile apps.
-		const statusBarItemEl = this.addStatusBarItem();
-		statusBarItemEl.setText('Status bar text');
-
-		// This adds a simple command that can be triggered anywhere
-		this.addCommand({
-			id: 'open-modal-simple',
-			name: 'Open modal (simple)',
-			callback: () => {
-				new SampleModal(this.app).open();
-			}
-		});
-		// This adds an editor command that can perform some operation on the current editor instance
-		this.addCommand({
-			id: 'replace-selected',
-			name: 'Replace selected content',
-			editorCallback: (editor: Editor, view: MarkdownView) => {
-				editor.replaceSelection('Sample editor command');
-			}
-		});
-		// This adds a complex command that can check whether the current state of the app allows execution of the command
-		this.addCommand({
-			id: 'open-modal-complex',
-			name: 'Open modal (complex)',
-			checkCallback: (checking: boolean) => {
-				// Conditions to check
-				const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
-				if (markdownView) {
-					// If checking is true, we're simply "checking" if the command can be run.
-					// If checking is false, then we want to actually perform the operation.
-					if (!checking) {
-						new SampleModal(this.app).open();
-					}
-
-					// This command will only show up in Command Palette when the check function returns true
-					return true;
-				}
-				return false;
-			}
-		});
-
-		// This adds a settings tab so the user can configure various aspects of the plugin
-		this.addSettingTab(new SampleSettingTab(this.app, this));
+		// add settings tab
+		this.addSettingTab(new LualineSettingsTab(this.app, this));
 
 		// If the plugin hooks up any global DOM events (on parts of the app that doesn't belong to this plugin)
 		// Using this function will automatically remove the event listener when this plugin is disabled.
-		this.registerDomEvent(document, 'click', (evt: MouseEvent) => {
-			new Notice("Click");
+		// this.registerDomEvent(document, "click", (evt: MouseEvent) => {
+		// 	new Notice("Click");
+		// });
+
+		// creates the leaf for statusbar
+		this.registerEvent(
+			this.app.workspace.on("active-leaf-change", (leaf) => {
+				this.injectBar(leaf);
+
+				if (this.componentEls.has(LualineItem.Time)) {
+					this.registerInterval(
+						window.setInterval(() => {
+							this.updateComponent(LualineItem.Time);
+						}, 1000),
+					);
+				}
+
+				this.updateComponent(LualineItem.ViewMode);
+				this.updateComponent(LualineItem.Backlinks);
+			}),
+		);
+
+		this.registerDomEvent(document, "keyup", (_) => {
+			this.updateComponent(LualineItem.VimMode);
+			this.updateComponent(LualineItem.WordCount);
+			this.updateComponent(LualineItem.CharCount);
 		});
 
-		// When registering intervals, this function will automatically clear the interval when the plugin is disabled.
-		this.registerInterval(window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000));
+		this.registerEvent(
+			this.app.workspace.on("file-open", (_) => {
+				this.updateComponent(LualineItem.FileName);
+				this.updateComponent(LualineItem.ViewMode);
+				this.updateComponent(LualineItem.Backlinks);
+			}),
+		);
 
+		this.registerEvent(
+			this.app.metadataCache.on("resolved", () => {
+				this.updateComponent(LualineItem.Backlinks);
+			}),
+		);
+
+		this.registerEvent(
+			this.app.workspace.on("layout-change", () => {
+				this.updateComponent(LualineItem.ViewMode);
+			}),
+		);
 	}
 
-	onunload() {
+	getVimMode(): string {
+		const mode =
+			// @ts-ignore
+			this.app.workspace.activeEditor?.editor?.cm.state.values[0].cm.state
+				.vim.mode ?? "NORMAL";
+
+		return mode.toUpperCase();
 	}
+
+	getWordCount(): number {
+		// word count
+		const content =
+			this.app.workspace.activeEditor?.editor?.getValue() ?? "";
+		const wordCount = content
+			.split(/\s+/)
+			.filter((w) => w.length > 0).length;
+
+		return wordCount;
+	}
+
+	getCharCount(): number {
+		const content =
+			this.app.workspace.activeEditor?.editor?.getValue() ?? "";
+		return content.length;
+	}
+
+	getFileName(): string {
+		const file = this.app.workspace.getActiveFile();
+		return file?.basename ?? "";
+	}
+
+	getDate(): string {
+		const date = new Date();
+		return date.toLocaleDateString();
+	}
+
+	getTime(): string {
+		const date = new Date();
+		return date.toLocaleTimeString();
+	}
+
+	getViewMode(): string {
+		const view = this.app.workspace.getActiveViewOfType(MarkdownView);
+		return view?.getMode() ?? "source";
+	}
+
+	getBacklinks(): number {
+		const file = this.app.workspace.getActiveFile();
+		if (!file) return 0;
+
+		// @ts-ignore
+		const backlinks = this.app.metadataCache.getBacklinksForFile(file);
+		return backlinks.count();
+	}
+
+	updateComponent(component: LualineItem) {
+		const el = this.componentEls.get(component);
+		if (!el) return;
+		const label = this.getComponentLabel(component);
+		el.setText(label);
+		if (component == LualineItem.VimMode) {
+			el.setAttr("data-mode", label);
+		}
+	}
+
+	injectBar(leaf: WorkspaceLeaf | null) {
+		console.log("Injected Bar");
+		if (!leaf) return;
+		if (!(leaf.view instanceof MarkdownView)) return;
+
+		leaf.view.containerEl.querySelector(".lualine-bar")?.remove();
+		const bar = leaf.view.containerEl.createEl("div", {
+			cls: "lualine-bar",
+		});
+		const leftSide = bar.createEl("div", {
+			cls: "lualine-left",
+		});
+		const rightSide = bar.createEl("div", {
+			cls: "lualine-right",
+		});
+
+		const leftComponents: LualineItem[] = [
+			LualineItem.FileName,
+			LualineItem.WordCount,
+			LualineItem.CharCount,
+		];
+		const rightComponents: LualineItem[] = [
+			LualineItem.ViewMode,
+			LualineItem.Backlinks,
+			LualineItem.Date,
+			LualineItem.Time,
+			LualineItem.VimMode,
+		];
+
+		leftComponents.forEach((component, index) => {
+			const el = leftSide.createEl("p", {
+				cls: `lualine-${component} ${index == 0 && "first-item"}`,
+				text: this.getComponentLabel(component),
+			});
+			this.componentEls.set(component, el);
+		});
+		rightComponents.forEach((component, index) => {
+			const el = rightSide.createEl("p", {
+				cls: `lualine-${component} ${index == rightComponents.length - 1 && "last-item"}`,
+				text: this.getComponentLabel(component),
+			});
+			this.componentEls.set(component, el);
+		});
+	}
+
+	getComponentLabel(component: LualineItem): string {
+		switch (component) {
+			case LualineItem.VimMode:
+				return this.getVimMode();
+			case LualineItem.FileName:
+				return this.getFileName();
+			case LualineItem.WordCount:
+				return this.getWordCount() + " words";
+			case LualineItem.Date:
+				return this.getDate();
+			case LualineItem.Time:
+				return this.getTime();
+			case LualineItem.CharCount:
+				return this.getCharCount() + " chars";
+			case LualineItem.ViewMode:
+				return this.getViewMode();
+			case LualineItem.Backlinks:
+				return this.getBacklinks() + " backlinks";
+		}
+	}
+
+	onunload() { }
 
 	async loadSettings() {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData() as Partial<MyPluginSettings>);
+		this.settings = Object.assign(
+			{},
+			DEFAULT_SETTINGS,
+			(await this.loadData()) as Partial<PluginSettings>,
+		);
 	}
 
 	async saveSettings() {
@@ -88,12 +222,12 @@ class SampleModal extends Modal {
 	}
 
 	onOpen() {
-		let {contentEl} = this;
-		contentEl.setText('Woah!');
+		let { contentEl } = this;
+		contentEl.setText("Woah!");
 	}
 
 	onClose() {
-		const {contentEl} = this;
+		const { contentEl } = this;
 		contentEl.empty();
 	}
 }

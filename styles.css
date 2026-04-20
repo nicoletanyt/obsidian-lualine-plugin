@@ -1,8 +1,104 @@
-/*
+@import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap");
 
-This CSS file will be included with your plugin, and
-available in the app when your plugin is enabled.
+.status-bar {
+	display: none;
+}
 
-If your plugin does not need CSS, delete this file.
+.lualine-bar {
+	font-family: var(--font-monospace);
+	position: absolute;
+	bottom: 1em;
+	left: 2em;
+	right: 2em;
+	background-color: var(--background-primary);
+	z-index: 10;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	font-size: 1.2em;
+	border-radius: 15px;
+}
 
-*/
+.lualine-left {
+	display: flex;
+	gap: 1em;
+}
+
+.lualine-right {
+	display: flex;
+	justify-content: flex-end;
+	gap: 1em;
+}
+
+.lualine-bar p {
+	padding: 1em;
+	margin: 0em;
+}
+
+.workspace-leaf-content {
+	position: relative;
+}
+
+/* COMPONENTS */
+
+.lualine-vimmode {
+	background: #a6e3a1;
+	color: #1e1e2e;
+	position: relative;
+	padding-left: 14px !important;
+}
+
+.lualine-vimmode::before {
+	content: "";
+	position: absolute;
+	left: -14px;
+	top: 0;
+	width: 14px;
+	height: 100%;
+	background: #a6e3a1;
+	clip-path: polygon(100% 0, 100% 100%, 0 100%);
+}
+
+.lualine-vimmode[data-mode="INSERT"],
+.lualine-vimmode[data-mode="INSERT"]::before {
+	background: #89b4fa;
+}
+
+.lualine-vimmode[data-mode="VISUAL BLOCK"],
+.lualine-vimmode[data-mode="VISUAL BLOCK"]::before {
+	background: #cba6f7;
+}
+
+.lualine-vimmode[data-mode="VISUAL"],
+.lualine-vimmode[data-mode="VISUAL"]::before {
+	background: #313244;
+	color: #cdd6f4;
+}
+
+.lualine-filename {
+	background: #313244;
+	color: #cdd6f4;
+	position: relative;
+	padding-right: 14px !important;
+}
+
+.first-item {
+	border-top-left-radius: 7px;
+	border-bottom-left-radius: 7px;
+}
+
+.last-item {
+	border-top-right-radius: 7px;
+	border-bottom-right-radius: 7px;
+}
+
+.lualine-filename::after {
+	content: "";
+	position: absolute;
+	right: -14px;
+	top: 0;
+	width: 14px;
+	height: 100%;
+	background: #313244;
+	clip-path: polygon(0 0, 100% 0, 0 100%);
+}
