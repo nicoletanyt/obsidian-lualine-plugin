@@ -22,12 +22,14 @@ export function renderComponentSettings(container: HTMLElement, plugin: LualineP
 	};
 	const draw = () => {
 		container.empty();
-		new Setting(container).setName("Components").setHeading().addButton((button) => button
+		new Setting(container)
+			.setName("Components")
+			.setDesc("Choose and arrange the components on each side of the bar.")
+			.addButton((button) => button
 			.setButtonText("Reset layout").onClick(() => {
 				plugin.settings.components = { left: [...DEFAULT_LAYOUT.left], right: [...DEFAULT_LAYOUT.right] };
 				void refresh();
 			}));
-		container.createEl("p", { text: "Choose and arrange the components on each side of the bar.", cls: "setting-item-description" });
 		const preview = container.createDiv({ cls: "lualine-settings-preview" });
 		for (const side of ["left", "right"] as const) {
 			const group = preview.createDiv({ cls: `lualine-settings-preview-${side}` });

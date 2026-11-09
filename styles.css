@@ -127,6 +127,21 @@
 	border-color: var(--text-error);
 }
 
+.lualine-settings-section {
+	border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.lualine-settings-section > summary {
+	padding: 1em 0;
+	cursor: pointer;
+	font-size: var(--font-ui-medium);
+	font-weight: var(--font-semibold);
+}
+
+.lualine-settings-section-content {
+	padding: 0 0 1em 1em;
+}
+
 .lualine-left {
 	display: flex;
 	gap: 1em;

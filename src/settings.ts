@@ -30,6 +30,11 @@ export const DEFAULT_SETTINGS: PluginSettings = {
 
 export class LualineSettingsTab extends PluginSettingTab {
 	plugin: LualinePlugin;
+	private sectionOpen: Record<string, boolean> = {
+		theme: true,
+		colours: false,
+		layout: false,
+	};
 
 	constructor(app: App, plugin: LualinePlugin) {
 		super(app, plugin);
@@ -39,11 +44,24 @@ export class LualineSettingsTab extends PluginSettingTab {
 	display(): void {
 		const { containerEl } = this;
 
+		containerEl.querySelectorAll<HTMLDetailsElement>(".lualine-settings-section").forEach((section) => {
+			const key = section.dataset.section;
+			if (key) this.sectionOpen[key] = section.open;
+		});
 		containerEl.empty();
 
-		new Setting(containerEl).setName("Colours").setHeading();
+		const createSection = (key: string, title: string): HTMLElement => {
+			const section = containerEl.createEl("details", {
+				cls: "lualine-settings-section",
+				attr: { "data-section": key },
+			});
+			section.open = this.sectionOpen[key] ?? false;
+			section.createEl("summary", { text: title });
+			return section.createDiv({ cls: "lualine-settings-section-content" });
+		};
+		const themeSection = createSection("theme", "Theme");
 
-		new Setting(containerEl)
+		new Setting(themeSection)
 			.setName("Colour scheme")
 			.setDesc("Choose colours for the status bar. Changes apply immediately.")
 			.addDropdown((dropdown) =>
@@ -58,10 +76,9 @@ export class LualineSettingsTab extends PluginSettingTab {
 					}),
 			);
 
-		renderComponentSettings(containerEl.createDiv(), this.plugin);
-
+		const colourSection = createSection("colours", "Custom colour");
 		const scheme = this.plugin.settings.colourScheme;
-		new Setting(containerEl)
+		new Setting(colourSection)
 			.setName("Custom colours")
 			.setDesc("Override colours for this preset. Leave a hex field blank to use the preset colour.")
 			.addButton((button) => button.setButtonText("Reset to preset").onClick(async () => {
@@ -74,7 +91,7 @@ export class LualineSettingsTab extends PluginSettingTab {
 		const presetColours = readPresetColours(containerEl, scheme);
 		for (const field of COLOUR_FIELDS) {
 			addColourSetting(
-				containerEl,
+				colourSection,
 				field,
 				presetColours[field.key] ?? "#000000",
 				this.plugin.settings.customColours[scheme]?.[field.key],
@@ -92,5 +109,8 @@ export class LualineSettingsTab extends PluginSettingTab {
 				},
 			);
 		}
+
+		const layoutSection = createSection("layout", "Custom layout");
+		renderComponentSettings(layoutSection, this.plugin);
 	}
 }
