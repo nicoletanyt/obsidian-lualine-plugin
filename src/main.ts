@@ -5,6 +5,8 @@ import {
 	PluginSettings,
 } from "./settings";
 import { LualineItem } from "types";
+import { resolveColourScheme } from "./themes";
+import { applyBarTheme, normaliseCustomColours } from "./theme-customisation";
 
 // Remember to rename these classes and interfaces!
 
@@ -18,6 +20,9 @@ export default class LualinePlugin extends Plugin {
 
 		// add settings tab
 		this.addSettingTab(new LualineSettingsTab(this.app, this));
+		this.app.workspace.onLayoutReady(() => {
+			this.injectBar(this.app.workspace.getMostRecentLeaf());
+		});
 
 		// If the plugin hooks up any global DOM events (on parts of the app that doesn't belong to this plugin)
 		// Using this function will automatically remove the event listener when this plugin is disabled.
@@ -144,6 +149,7 @@ export default class LualinePlugin extends Plugin {
 		const bar = leaf.view.containerEl.createEl("div", {
 			cls: "lualine-bar",
 		});
+		applyBarTheme(bar, this.settings.colourScheme, this.settings.customColours[this.settings.colourScheme]);
 		const leftSide = bar.createEl("div", {
 			cls: "lualine-left",
 		});
@@ -178,6 +184,15 @@ export default class LualinePlugin extends Plugin {
 			});
 			this.componentEls.set(component, el);
 		});
+		this.updateComponent(LualineItem.VimMode);
+	}
+
+	applyColourScheme() {
+		this.app.workspace.iterateAllLeaves((leaf) => {
+			leaf.view.containerEl.querySelectorAll<HTMLElement>(".lualine-bar").forEach((bar) => {
+				applyBarTheme(bar, this.settings.colourScheme, this.settings.customColours[this.settings.colourScheme]);
+			});
+		});
 	}
 
 	getComponentLabel(component: LualineItem): string {
@@ -209,6 +224,8 @@ export default class LualinePlugin extends Plugin {
 			DEFAULT_SETTINGS,
 			(await this.loadData()) as Partial<PluginSettings>,
 		);
+		this.settings.colourScheme = resolveColourScheme(this.settings.colourScheme);
+		this.settings.customColours = normaliseCustomColours(this.settings.customColours);
 	}
 
 	async saveSettings() {

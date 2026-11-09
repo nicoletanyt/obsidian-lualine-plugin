@@ -5,18 +5,126 @@
 }
 
 .lualine-bar {
+	/* Catppuccin Mocha is also the fallback for unknown schemes. */
+	--lualine-background: var(--background-primary);
+	--lualine-text: var(--text-normal);
+	--lualine-section-background: #313244;
+	--lualine-section-text: #cdd6f4;
+	--lualine-mode-text: #1e1e2e;
+	--lualine-normal: #a6e3a1;
+	--lualine-insert: #89b4fa;
+	--lualine-visual: #313244;
+	--lualine-visual-text: #cdd6f4;
+	--lualine-visual-block: #cba6f7;
+
 	font-family: var(--font-monospace);
 	position: absolute;
 	bottom: 1em;
 	left: 2em;
 	right: 2em;
-	background-color: var(--background-primary);
+	background-color: var(--lualine-background);
+	color: var(--lualine-text);
 	z-index: 10;
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
 	font-size: 1.2em;
 	border-radius: 15px;
+}
+
+.lualine-bar[data-colour-scheme="kanagawa-dragon"] {
+	--lualine-background: #181616;
+	--lualine-text: #c5c9c5;
+	--lualine-section-background: #282727;
+	--lualine-section-text: #c5c9c5;
+	--lualine-mode-text: #181616;
+	--lualine-normal: #87a987;
+	--lualine-insert: #8ba4b0;
+	--lualine-visual: #c4b28a;
+	--lualine-visual-text: #181616;
+	--lualine-visual-block: #a292a3;
+}
+
+.lualine-bar[data-colour-scheme="gruvbox-dark"] {
+	--lualine-background: #282828;
+	--lualine-text: #ebdbb2;
+	--lualine-section-background: #3c3836;
+	--lualine-section-text: #ebdbb2;
+	--lualine-mode-text: #282828;
+	--lualine-normal: #b8bb26;
+	--lualine-insert: #83a598;
+	--lualine-visual: #fe8019;
+	--lualine-visual-text: #282828;
+	--lualine-visual-block: #d3869b;
+}
+
+.lualine-bar[data-colour-scheme="github-dark"] {
+	--lualine-background: #0d1117;
+	--lualine-text: #e6edf3;
+	--lualine-section-background: #161b22;
+	--lualine-section-text: #e6edf3;
+	--lualine-mode-text: #0d1117;
+	--lualine-normal: #7ee787;
+	--lualine-insert: #79c0ff;
+	--lualine-visual: #d2a8ff;
+	--lualine-visual-text: #0d1117;
+	--lualine-visual-block: #ffa657;
+}
+
+.lualine-bar[data-colour-scheme="tokyo-night"] {
+	--lualine-background: #1a1b26;
+	--lualine-text: #c0caf5;
+	--lualine-section-background: #24283b;
+	--lualine-section-text: #c0caf5;
+	--lualine-mode-text: #1a1b26;
+	--lualine-normal: #9ece6a;
+	--lualine-insert: #7aa2f7;
+	--lualine-visual: #bb9af7;
+	--lualine-visual-text: #1a1b26;
+	--lualine-visual-block: #e0af68;
+}
+
+.lualine-bar[data-colour-scheme="nord"] {
+	--lualine-background: #2e3440;
+	--lualine-text: #eceff4;
+	--lualine-section-background: #3b4252;
+	--lualine-section-text: #eceff4;
+	--lualine-mode-text: #2e3440;
+	--lualine-normal: #a3be8c;
+	--lualine-insert: #88c0d0;
+	--lualine-visual: #b48ead;
+	--lualine-visual-text: #2e3440;
+	--lualine-visual-block: #ebcb8b;
+}
+
+.lualine-bar[data-colour-scheme="dracula"] {
+	--lualine-background: #282a36;
+	--lualine-text: #f8f8f2;
+	--lualine-section-background: #44475a;
+	--lualine-section-text: #f8f8f2;
+	--lualine-mode-text: #282a36;
+	--lualine-normal: #50fa7b;
+	--lualine-insert: #8be9fd;
+	--lualine-visual: #ff79c6;
+	--lualine-visual-text: #282a36;
+	--lualine-visual-block: #bd93f9;
+}
+
+.lualine-bar.lualine-colour-probe {
+	display: none;
+}
+
+.lualine-colour-setting .setting-item-control {
+	flex-wrap: wrap;
+}
+
+.lualine-colour-setting input[type="text"] {
+	width: 8em;
+	font-family: var(--font-monospace);
+}
+
+.lualine-colour-setting input[aria-invalid="true"] {
+	border-color: var(--text-error);
 }
 
 .lualine-left {
@@ -42,8 +150,8 @@
 /* COMPONENTS */
 
 .lualine-vimmode {
-	background: #a6e3a1;
-	color: #1e1e2e;
+	background: var(--lualine-normal);
+	color: var(--lualine-mode-text);
 	position: relative;
 	padding-left: 14px !important;
 }
@@ -55,29 +163,27 @@
 	top: 0;
 	width: 14px;
 	height: 100%;
-	background: #a6e3a1;
+	background: inherit;
 	clip-path: polygon(100% 0, 100% 100%, 0 100%);
 }
 
-.lualine-vimmode[data-mode="INSERT"],
-.lualine-vimmode[data-mode="INSERT"]::before {
-	background: #89b4fa;
+.lualine-vimmode[data-mode="INSERT"] {
+	background: var(--lualine-insert);
 }
 
-.lualine-vimmode[data-mode="VISUAL BLOCK"],
-.lualine-vimmode[data-mode="VISUAL BLOCK"]::before {
-	background: #cba6f7;
+.lualine-vimmode[data-mode="VISUAL BLOCK"] {
+	background: var(--lualine-visual-block);
 }
 
 .lualine-vimmode[data-mode="VISUAL"],
-.lualine-vimmode[data-mode="VISUAL"]::before {
-	background: #313244;
-	color: #cdd6f4;
+.lualine-vimmode[data-mode="VISUAL LINE"] {
+	background: var(--lualine-visual);
+	color: var(--lualine-visual-text);
 }
 
 .lualine-filename {
-	background: #313244;
-	color: #cdd6f4;
+	background: var(--lualine-section-background);
+	color: var(--lualine-section-text);
 	position: relative;
 	padding-right: 14px !important;
 }
@@ -99,6 +205,6 @@
 	top: 0;
 	width: 14px;
 	height: 100%;
-	background: #313244;
+	background: inherit;
 	clip-path: polygon(0 0, 100% 0, 0 100%);
 }

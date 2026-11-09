@@ -1,4 +1,28 @@
-# Obsidian Sample Plugin
+# Obsidian Lualine Plugin
+
+## Colour schemes
+
+Open **Settings → Lualine Plugin** and select a **Colour scheme** to change the
+Lualine bar's colours. Changes apply immediately to open bars and are saved for
+the next session; your Obsidian theme is not changed.
+
+Available presets: Catppuccin Mocha (default), Kanagawa Dragon, Gruvbox Dark,
+GitHub Dark, Tokyo Night, Nord, and Dracula. All presets are bundled with the
+plugin and require no downloads.
+
+### Custom colours
+
+Under **Colours → Custom colours**, use a colour picker or enter a hex colour (`#aabbcc`
+or `#abc`) to override the bar, filename, and Vim mode colours. The hex field's
+placeholder shows the preset colour; leaving it blank inherits that colour.
+Invalid values show an error and do not change the bar.
+
+Customisations apply immediately and are saved separately for each preset.
+Select the reset icon beside a field to restore just that colour, or select
+**Reset to preset** to clear all overrides for the selected preset. Switching
+presets does not delete your customisations.
+
+## Development
 
 This is a sample plugin for Obsidian (https://obsidian.md).
 
