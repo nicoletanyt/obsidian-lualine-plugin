@@ -6,6 +6,9 @@ import {
 	resolveColourScheme,
 } from "./themes";
 import type { ColourScheme } from "./themes";
+import { DEFAULT_LAYOUT } from "./components";
+import type { ComponentLayout } from "./components";
+import { renderComponentSettings } from "./component-settings";
 import type { CustomColours } from "./theme-customisation";
 import { COLOUR_FIELDS } from "./theme-customisation";
 import { addColourSetting } from "./ui/colour-setting";
@@ -14,12 +17,14 @@ import { readPresetColours } from "./ui/preset-colours";
 export interface PluginSettings {
 	showFileExt: boolean;
 	colourScheme: ColourScheme;
+	components: ComponentLayout;
 	customColours: CustomColours;
 }
 
 export const DEFAULT_SETTINGS: PluginSettings = {
 	showFileExt: true,
 	colourScheme: DEFAULT_COLOUR_SCHEME,
+	components: DEFAULT_LAYOUT,
 	customColours: {},
 };
 
@@ -52,6 +57,8 @@ export class LualineSettingsTab extends PluginSettingTab {
 						await this.plugin.saveSettings();
 					}),
 			);
+
+		renderComponentSettings(containerEl.createDiv(), this.plugin);
 
 		const scheme = this.plugin.settings.colourScheme;
 		new Setting(containerEl)

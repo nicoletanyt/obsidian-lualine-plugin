@@ -6,14 +6,14 @@ import {
 } from "./settings";
 import { LualineItem } from "types";
 import { resolveColourScheme } from "./themes";
+import { resolveLayout } from "./components";
 import { applyBarTheme, normaliseCustomColours } from "./theme-customisation";
 
 // Remember to rename these classes and interfaces!
 
 export default class LualinePlugin extends Plugin {
 	settings: PluginSettings;
-
-	componentEls: Map<LualineItem, HTMLElement> = new Map();
+	private saveQueue: Promise<void> = Promise.resolve();
 
 	async onload() {
 		await this.loadSettings();
@@ -35,14 +35,6 @@ export default class LualinePlugin extends Plugin {
 			this.app.workspace.on("active-leaf-change", (leaf) => {
 				this.injectBar(leaf);
 
-				if (this.componentEls.has(LualineItem.Time)) {
-					this.registerInterval(
-						window.setInterval(() => {
-							this.updateComponent(LualineItem.Time);
-						}, 1000),
-					);
-				}
-
 				this.updateComponent(LualineItem.ViewMode);
 				this.updateComponent(LualineItem.Backlinks);
 			}),
@@ -53,6 +45,10 @@ export default class LualinePlugin extends Plugin {
 			this.updateComponent(LualineItem.WordCount);
 			this.updateComponent(LualineItem.CharCount);
 		});
+		this.registerInterval(window.setInterval(() => {
+			this.updateComponent(LualineItem.Time);
+			this.updateComponent(LualineItem.Date);
+		}, 1000));
 
 		this.registerEvent(
 			this.app.workspace.on("file-open", (_) => {
@@ -131,17 +127,17 @@ export default class LualinePlugin extends Plugin {
 	}
 
 	updateComponent(component: LualineItem) {
-		const el = this.componentEls.get(component);
-		if (!el) return;
+		if (!this.settings.components.left.includes(component) && !this.settings.components.right.includes(component)) return;
 		const label = this.getComponentLabel(component);
-		el.setText(label);
-		if (component == LualineItem.VimMode) {
-			el.setAttr("data-mode", label);
-		}
+		this.app.workspace.iterateAllLeaves((leaf) => {
+			leaf.view.containerEl.querySelectorAll<HTMLElement>(`.lualine-bar .lualine-${component}`).forEach((el) => {
+				el.setText(label);
+				if (component === LualineItem.VimMode) el.setAttr("data-mode", label);
+			});
+		});
 	}
 
 	injectBar(leaf: WorkspaceLeaf | null) {
-		console.log("Injected Bar");
 		if (!leaf) return;
 		if (!(leaf.view instanceof MarkdownView)) return;
 
@@ -157,34 +153,31 @@ export default class LualinePlugin extends Plugin {
 			cls: "lualine-right",
 		});
 
-		const leftComponents: LualineItem[] = [
-			LualineItem.FileName,
-			LualineItem.WordCount,
-			LualineItem.CharCount,
-		];
-		const rightComponents: LualineItem[] = [
-			LualineItem.ViewMode,
-			LualineItem.Backlinks,
-			LualineItem.Date,
-			LualineItem.Time,
-			LualineItem.VimMode,
-		];
+		const leftComponents = this.settings.components.left;
+		const rightComponents = this.settings.components.right;
 
 		leftComponents.forEach((component, index) => {
 			const el = leftSide.createEl("p", {
 				cls: `lualine-${component} ${index == 0 && "first-item"}`,
 				text: this.getComponentLabel(component),
 			});
-			this.componentEls.set(component, el);
+			if (component === LualineItem.VimMode) el.setAttr("data-mode", el.textContent ?? "");
 		});
 		rightComponents.forEach((component, index) => {
 			const el = rightSide.createEl("p", {
 				cls: `lualine-${component} ${index == rightComponents.length - 1 && "last-item"}`,
 				text: this.getComponentLabel(component),
 			});
-			this.componentEls.set(component, el);
+			if (component === LualineItem.VimMode) el.setAttr("data-mode", el.textContent ?? "");
 		});
-		this.updateComponent(LualineItem.VimMode);
+	}
+
+	refreshBars() {
+		this.app.workspace.iterateAllLeaves((leaf) => {
+			if (leaf.view instanceof MarkdownView && leaf.view.containerEl.querySelector(".lualine-bar")) {
+				this.injectBar(leaf);
+			}
+		});
 	}
 
 	applyColourScheme() {
@@ -216,7 +209,11 @@ export default class LualinePlugin extends Plugin {
 		}
 	}
 
-	onunload() { }
+	onunload() {
+		this.app.workspace.iterateAllLeaves((leaf) => {
+			leaf.view.containerEl.querySelectorAll(".lualine-bar").forEach((bar) => bar.remove());
+		});
+	}
 
 	async loadSettings() {
 		this.settings = Object.assign(
@@ -225,11 +222,20 @@ export default class LualinePlugin extends Plugin {
 			(await this.loadData()) as Partial<PluginSettings>,
 		);
 		this.settings.colourScheme = resolveColourScheme(this.settings.colourScheme);
+		this.settings.components = resolveLayout(this.settings.components);
 		this.settings.customColours = normaliseCustomColours(this.settings.customColours);
 	}
 
 	async saveSettings() {
-		await this.saveData(this.settings);
+		const snapshot: PluginSettings = {
+			...this.settings,
+			components: {
+				left: [...this.settings.components.left],
+				right: [...this.settings.components.right],
+			},
+		};
+		this.saveQueue = this.saveQueue.catch(() => {}).then(() => this.saveData(snapshot));
+		await this.saveQueue;
 	}
 }
 

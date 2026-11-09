@@ -10,6 +10,14 @@ Available presets: Catppuccin Mocha (default), Kanagawa Dragon, Gruvbox Dark,
 GitHub Dark, Tokyo Night, Nord, and Dracula. All presets are bundled with the
 plugin and require no downloads.
 
+## Components
+
+In **Settings → Lualine Plugin**, arrange components in the **Left** and **Right**
+lists. Drag a row or use its arrow buttons to reorder it or move it to the other
+side. Remove a component with the × button and add it again with **Add component**.
+Changes apply immediately and are saved automatically. Select **Reset layout**
+to restore the default arrangement.
+
 ### Custom colours
 
 Under **Colours → Custom colours**, use a colour picker or enter a hex colour (`#aabbcc`

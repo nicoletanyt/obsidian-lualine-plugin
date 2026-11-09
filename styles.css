@@ -208,3 +208,54 @@
 	background: inherit;
 	clip-path: polygon(0 0, 100% 0, 0 100%);
 }
+
+.lualine-settings-preview {
+	display: flex;
+	justify-content: space-between;
+	gap: 1em;
+	padding: 0.75em;
+	margin: 1em 0;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	background: var(--background-secondary);
+	min-height: 3em;
+}
+
+.lualine-settings-preview-left,
+.lualine-settings-preview-right {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.35em;
+}
+
+.lualine-settings-preview-right { justify-content: flex-end; }
+
+.lualine-settings-preview span {
+	padding: 0.25em 0.5em;
+	border-radius: var(--radius-s);
+	background: var(--background-modifier-hover);
+	font-size: var(--font-ui-smaller);
+}
+
+.lualine-settings-columns {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+	gap: 1em;
+}
+
+.lualine-settings-column { min-width: 0; }
+.lualine-settings-column h4 { margin: 0.5em 0; }
+.lualine-settings-column select { margin-top: 0.5em; max-width: 100%; }
+.lualine-settings-list { min-height: 2em; }
+
+.lualine-settings-row {
+	display: flex;
+	align-items: center;
+	gap: 0.15em;
+	padding: 0.3em;
+	border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.lualine-settings-name { flex: 1; min-width: 0; }
+.lualine-settings-grip { display: flex; cursor: grab; color: var(--text-muted); }
+.lualine-settings-row button:disabled { opacity: 0.3; }
