@@ -144,11 +144,13 @@
 
 .lualine-left {
 	display: flex;
+	min-width: 0;
 	gap: 1em;
 }
 
 .lualine-right {
 	display: flex;
+	min-width: 0;
 	justify-content: flex-end;
 	gap: 1em;
 }
@@ -156,6 +158,28 @@
 .lualine-bar p {
 	padding: 1em;
 	margin: 0em;
+	flex: 0 0 auto;
+	white-space: nowrap;
+}
+
+.lualine-bar p.lualine-filename {
+	flex: 0 1 auto;
+	min-width: 4em;
+}
+
+.lualine-filename-text {
+	display: block;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.lualine-bar p.lualine-responsive-hidden {
+	display: none;
+}
+
+.lualine-responsive-single .lualine-left,
+.lualine-responsive-single .lualine-right {
+	overflow: hidden;
 }
 
 .workspace-leaf-content {
@@ -274,3 +298,54 @@
 .lualine-settings-name { flex: 1; min-width: 0; }
 .lualine-settings-grip { display: flex; cursor: grab; color: var(--text-muted); }
 .lualine-settings-row button:disabled { opacity: 0.3; }
+
+.lualine-section-select { padding: 0.2em; }
+
+.lualine-bar[data-separator-style]:not([data-separator-style="original"]) .lualine-left,
+.lualine-bar[data-separator-style]:not([data-separator-style="original"]) .lualine-right {
+	gap: 0;
+}
+
+.lualine-bar[data-separator-style]:not([data-separator-style="original"]) p {
+	position: relative;
+	border-radius: 0;
+}
+
+.lualine-bar[data-separator-style]:not([data-separator-style="original"]) .lualine-filename::after,
+.lualine-bar[data-separator-style]:not([data-separator-style="original"]) .lualine-vimmode::before {
+	content: none;
+}
+
+.lualine-bar[data-separator-style="rounded"] .lualine-section-start {
+	border-radius: 0.6em 0 0 0.6em !important;
+}
+
+.lualine-bar[data-separator-style="rounded"] .lualine-section-end {
+	border-radius: 0 0.6em 0.6em 0 !important;
+}
+
+.lualine-bar[data-separator-style="rounded"] .lualine-section-start.lualine-section-end {
+	border-radius: 0.6em !important;
+}
+
+.lualine-bar[data-separator-style="angled"] .lualine-left .lualine-section-end::after,
+.lualine-bar[data-separator-style="angled"] .lualine-right .lualine-section-start::before {
+	content: "";
+	position: absolute;
+	top: 0;
+	width: 10px;
+	height: 100%;
+	background: inherit;
+	z-index: 1;
+	pointer-events: none;
+}
+
+.lualine-bar[data-separator-style="angled"] .lualine-left .lualine-section-end::after {
+	right: -10px;
+	clip-path: polygon(0 0, 100% 50%, 0 100%);
+}
+
+.lualine-bar[data-separator-style="angled"] .lualine-right .lualine-section-start::before {
+	left: -10px;
+	clip-path: polygon(100% 0, 0 50%, 100% 100%);
+}

@@ -3,6 +3,7 @@ import type LualinePlugin from "./main";
 import { COMPONENT_NAMES, DEFAULT_LAYOUT } from "./components";
 import type { Side } from "./components";
 import { LualineItem } from "./types";
+import { SIDE_SECTIONS, resolveAssignments } from "./section-styling";
 
 export function renderComponentSettings(container: HTMLElement, plugin: LualinePlugin): void {
 	let dragged: { side: Side; item: LualineItem } | null = null;
@@ -15,9 +16,13 @@ export function renderComponentSettings(container: HTMLElement, plugin: LualineP
 		const layout = plugin.settings.components;
 		const oldIndex = layout[from].indexOf(item);
 		if (oldIndex < 0) return;
+		const target = layout[to][index] ?? layout[to][index - 1];
+		const targetSection = target === item ? plugin.settings.sectionAssignments[item] : target && plugin.settings.sectionAssignments[target];
 		layout[from].splice(oldIndex, 1);
 		if (from === to && oldIndex < index) index--;
 		layout[to].splice(index, 0, item);
+		plugin.settings.sectionAssignments[item] = targetSection && SIDE_SECTIONS[to].includes(targetSection) ? targetSection : SIDE_SECTIONS[to][0];
+		plugin.settings.sectionAssignments = resolveAssignments(plugin.settings.sectionAssignments, layout);
 		void refresh();
 	};
 	const draw = () => {
@@ -28,6 +33,7 @@ export function renderComponentSettings(container: HTMLElement, plugin: LualineP
 			.addButton((button) => button
 			.setButtonText("Reset layout").onClick(() => {
 				plugin.settings.components = { left: [...DEFAULT_LAYOUT.left], right: [...DEFAULT_LAYOUT.right] };
+				plugin.settings.sectionAssignments = resolveAssignments({}, plugin.settings.components);
 				void refresh();
 			}));
 		const preview = container.createDiv({ cls: "lualine-settings-preview" });
@@ -65,6 +71,16 @@ export function renderComponentSettings(container: HTMLElement, plugin: LualineP
 				const grip = row.createSpan({ cls: "lualine-settings-grip", attr: { "aria-hidden": "true" } });
 				setIcon(grip, "grip-vertical");
 				row.createSpan({ text: COMPONENT_NAMES[item], cls: "lualine-settings-name" });
+				const sectionSelect = row.createEl("select", { cls: "dropdown lualine-section-select", attr: { "aria-label": `Section for ${COMPONENT_NAMES[item]}` } });
+				for (const section of SIDE_SECTIONS[side]) sectionSelect.createEl("option", { text: section.toUpperCase(), value: section });
+				sectionSelect.value = plugin.settings.sectionAssignments[item] ?? SIDE_SECTIONS[side][0]!;
+				sectionSelect.addEventListener("change", () => {
+					const section = SIDE_SECTIONS[side].find((candidate) => candidate === sectionSelect.value);
+					if (!section) return;
+					plugin.settings.sectionAssignments[item] = section;
+					plugin.settings.sectionAssignments = resolveAssignments(plugin.settings.sectionAssignments, plugin.settings.components);
+					void refresh();
+				});
 				const button = (icon: string, label: string, action: () => void, disabled = false) => {
 					const el = row.createEl("button", { cls: "clickable-icon", attr: { "aria-label": `${label} ${COMPONENT_NAMES[item]}`, title: label, type: "button" } });
 					setIcon(el, icon);
@@ -75,7 +91,7 @@ export function renderComponentSettings(container: HTMLElement, plugin: LualineP
 				button("chevron-down", "Move down", () => move(side, item, side, index + 2), index === plugin.settings.components[side].length - 1);
 				const other = side === "left" ? "right" : "left";
 				button(side === "left" ? "arrow-right" : "arrow-left", `Move to ${other}`, () => move(side, item, other, plugin.settings.components[other].length));
-				button("x", "Remove", () => { plugin.settings.components[side].splice(index, 1); void refresh(); });
+				button("x", "Remove", () => { plugin.settings.components[side].splice(index, 1); delete plugin.settings.sectionAssignments[item]; void refresh(); });
 			});
 			const used = new Set([...plugin.settings.components.left, ...plugin.settings.components.right]);
 			const available = Object.values(LualineItem).filter((item) => !used.has(item));
@@ -85,7 +101,11 @@ export function renderComponentSettings(container: HTMLElement, plugin: LualineP
 				for (const item of available) select.createEl("option", { text: COMPONENT_NAMES[item], value: item });
 				select.addEventListener("change", () => {
 					const item = available.find((candidate) => String(candidate) === select.value);
-					if (item) { plugin.settings.components[side].push(item); void refresh(); }
+					if (item) {
+						plugin.settings.components[side].push(item);
+						plugin.settings.sectionAssignments[item] = SIDE_SECTIONS[side][SIDE_SECTIONS[side].length - 1];
+						void refresh();
+					}
 				});
 			}
 		}

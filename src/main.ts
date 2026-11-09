@@ -9,12 +9,15 @@ import { resolveColourScheme } from "./themes";
 import { resolveLayout } from "./components";
 import { applyBarTheme, normaliseCustomColours } from "./theme-customisation";
 import { formatCount, formatDate, formatFileName, formatTime, resolveComponentOptions } from "./component-options";
+import { ResponsiveBars } from "./responsive-bar";
+import { resolveAssignments, resolveSectionColours, resolveSeparator, SIDE_SECTIONS } from "./section-styling";
 
 // Remember to rename these classes and interfaces!
 
 export default class LualinePlugin extends Plugin {
 	settings: PluginSettings;
 	private saveQueue: Promise<void> = Promise.resolve();
+	private responsiveBars = new ResponsiveBars();
 
 	async onload() {
 		await this.loadSettings();
@@ -67,6 +70,7 @@ export default class LualinePlugin extends Plugin {
 
 		this.registerEvent(
 			this.app.workspace.on("layout-change", () => {
+				this.responsiveBars.prune();
 				this.updateComponent(LualineItem.ViewMode);
 			}),
 		);
@@ -132,8 +136,12 @@ export default class LualinePlugin extends Plugin {
 		this.app.workspace.iterateAllLeaves((leaf) => {
 			leaf.view.containerEl.querySelectorAll<HTMLElement>(`.lualine-bar .lualine-${component}`).forEach((el) => {
 				const label = this.getComponentLabel(component, leaf);
-				el.setText(label);
+				const target = component === LualineItem.FileName ? el.querySelector<HTMLElement>(".lualine-filename-text") : el;
+				target?.setText(label);
+				if (component === LualineItem.FileName) el.setAttribute("title", label);
 				if (component === LualineItem.VimMode) el.setAttr("data-mode", label);
+				const bar = el.closest<HTMLElement>(".lualine-bar");
+				if (bar) this.responsiveBars.schedule(bar);
 			});
 		});
 	}
@@ -142,9 +150,14 @@ export default class LualinePlugin extends Plugin {
 		if (!leaf) return;
 		if (!(leaf.view instanceof MarkdownView)) return;
 
-		leaf.view.containerEl.querySelector(".lualine-bar")?.remove();
+		const previous = leaf.view.containerEl.querySelector<HTMLElement>(".lualine-bar");
+		if (previous) {
+			this.responsiveBars.remove(previous);
+			previous.remove();
+		}
 		const bar = leaf.view.containerEl.createEl("div", {
 			cls: "lualine-bar",
+			attr: { "data-separator-style": this.settings.separatorStyle },
 		});
 		applyBarTheme(bar, this.settings.colourScheme, this.settings.customColours[this.settings.colourScheme]);
 		const leftSide = bar.createEl("div", {
@@ -156,21 +169,41 @@ export default class LualinePlugin extends Plugin {
 
 		const leftComponents = this.settings.components.left;
 		const rightComponents = this.settings.components.right;
+		const styleComponent = (el: HTMLElement, component: LualineItem, side: "left" | "right") => {
+			const section = this.settings.sectionAssignments[component] ?? SIDE_SECTIONS[side][0]!;
+			el.dataset.section = section;
+			const colours = this.settings.sectionColours[section];
+			if (colours?.background) el.style.backgroundColor = colours.background;
+			if (colours?.text) el.style.color = colours.text;
+		};
 
 		leftComponents.forEach((component, index) => {
 			const el = leftSide.createEl("p", {
 				cls: `lualine-${component} ${index == 0 && "first-item"}`,
-				text: this.getComponentLabel(component, leaf),
+				text: component === LualineItem.FileName ? "" : this.getComponentLabel(component, leaf),
 			});
+			styleComponent(el, component, "left");
 			if (component === LualineItem.VimMode) el.setAttr("data-mode", el.textContent ?? "");
+			if (component === LualineItem.FileName) {
+				const label = this.getComponentLabel(component, leaf);
+				el.createSpan({ cls: "lualine-filename-text", text: label });
+				el.setAttribute("title", label);
+			}
 		});
 		rightComponents.forEach((component, index) => {
 			const el = rightSide.createEl("p", {
 				cls: `lualine-${component} ${index == rightComponents.length - 1 && "last-item"}`,
-				text: this.getComponentLabel(component, leaf),
+				text: component === LualineItem.FileName ? "" : this.getComponentLabel(component, leaf),
 			});
+			styleComponent(el, component, "right");
 			if (component === LualineItem.VimMode) el.setAttr("data-mode", el.textContent ?? "");
+			if (component === LualineItem.FileName) {
+				const label = this.getComponentLabel(component, leaf);
+				el.createSpan({ cls: "lualine-filename-text", text: label });
+				el.setAttribute("title", label);
+			}
 		});
+		this.responsiveBars.add(bar);
 	}
 
 	refreshBars() {
@@ -211,6 +244,7 @@ export default class LualinePlugin extends Plugin {
 	}
 
 	onunload() {
+		this.responsiveBars.destroy();
 		this.app.workspace.iterateAllLeaves((leaf) => {
 			leaf.view.containerEl.querySelectorAll(".lualine-bar").forEach((bar) => bar.remove());
 		});
@@ -226,6 +260,9 @@ export default class LualinePlugin extends Plugin {
 		this.settings.components = resolveLayout(this.settings.components);
 		this.settings.customColours = normaliseCustomColours(this.settings.customColours);
 		this.settings.componentOptions = resolveComponentOptions(this.settings.componentOptions);
+		this.settings.sectionAssignments = resolveAssignments(this.settings.sectionAssignments, this.settings.components);
+		this.settings.sectionColours = resolveSectionColours(this.settings.sectionColours);
+		this.settings.separatorStyle = resolveSeparator(this.settings.separatorStyle);
 	}
 
 	async saveSettings() {
@@ -236,6 +273,8 @@ export default class LualinePlugin extends Plugin {
 				right: [...this.settings.components.right],
 			},
 			componentOptions: { ...this.settings.componentOptions },
+			sectionAssignments: { ...this.settings.sectionAssignments },
+			sectionColours: resolveSectionColours(this.settings.sectionColours),
 		};
 		this.saveQueue = this.saveQueue.catch(() => {}).then(() => this.saveData(snapshot));
 		await this.saveQueue;

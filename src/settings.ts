@@ -16,6 +16,8 @@ import { readPresetColours } from "./ui/preset-colours";
 import { DEFAULT_COMPONENT_OPTIONS } from "./component-options";
 import type { ComponentOptions } from "./component-options";
 import { renderComponentOptions } from "./ui/component-options";
+import type { SectionAssignments, SectionColours, SeparatorStyle } from "./section-styling";
+import { renderSectionStyling } from "./ui/section-styling";
 
 export interface PluginSettings {
 	showFileExt: boolean;
@@ -23,6 +25,9 @@ export interface PluginSettings {
 	components: ComponentLayout;
 	customColours: CustomColours;
 	componentOptions: ComponentOptions;
+	sectionAssignments: SectionAssignments;
+	sectionColours: SectionColours;
+	separatorStyle: SeparatorStyle;
 }
 
 export const DEFAULT_SETTINGS: PluginSettings = {
@@ -31,6 +36,9 @@ export const DEFAULT_SETTINGS: PluginSettings = {
 	components: DEFAULT_LAYOUT,
 	customColours: {},
 	componentOptions: DEFAULT_COMPONENT_OPTIONS,
+	sectionAssignments: {},
+	sectionColours: {},
+	separatorStyle: "original",
 };
 
 export class LualineSettingsTab extends PluginSettingTab {
@@ -40,6 +48,7 @@ export class LualineSettingsTab extends PluginSettingTab {
 		colours: false,
 		layout: false,
 		options: false,
+		sections: false,
 	};
 
 	constructor(app: App, plugin: LualinePlugin) {
@@ -121,5 +130,8 @@ export class LualineSettingsTab extends PluginSettingTab {
 
 		const optionsSection = createSection("options", "Component options");
 		renderComponentOptions(optionsSection, this.plugin);
+
+		const stylingSection = createSection("sections", "Section styling");
+		renderSectionStyling(stylingSection, this.plugin);
 	}
 }

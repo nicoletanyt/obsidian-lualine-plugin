@@ -22,6 +22,16 @@ Under **Component options**, choose whether the file name shows its vault-relati
 path and extension, select date and time formats, and optionally show counts
 without their labels. Existing displays remain the default.
 
+The bar adapts to each pane's width. Long file names are truncated (hover to see
+the full name), and supplementary components are temporarily hidden as space
+runs out. They reappear when the pane is widened; your layout is not changed.
+
+Assign components to sections A–C on the left and X–Z on the right using the
+section selector in each layout row. Under **Section styling**, choose original,
+angled, rounded, or no separators and optionally set a background and text hex
+colour for each section. Empty colour fields retain the theme's component colours.
+Existing layouts start in A and X and keep their original appearance.
+
 ### Custom colours
 
 Under **Custom colour**, use a colour picker or enter a hex colour (`#aabbcc`
