@@ -8,6 +8,7 @@ import { LualineItem } from "types";
 import { resolveColourScheme } from "./themes";
 import { resolveLayout } from "./components";
 import { applyBarTheme, normaliseCustomColours } from "./theme-customisation";
+import { formatCount, formatDate, formatFileName, formatTime, resolveComponentOptions } from "./component-options";
 
 // Remember to rename these classes and interfaces!
 
@@ -97,19 +98,19 @@ export default class LualinePlugin extends Plugin {
 		return content.length;
 	}
 
-	getFileName(): string {
-		const file = this.app.workspace.getActiveFile();
-		return file?.basename ?? "";
+	getFileName(leaf?: WorkspaceLeaf): string {
+		const file = leaf?.view instanceof MarkdownView ? leaf.view.file : this.app.workspace.getActiveFile();
+		return formatFileName(file, this.settings.componentOptions);
 	}
 
 	getDate(): string {
 		const date = new Date();
-		return date.toLocaleDateString();
+		return formatDate(date, this.settings.componentOptions.dateFormat);
 	}
 
 	getTime(): string {
 		const date = new Date();
-		return date.toLocaleTimeString();
+		return formatTime(date, this.settings.componentOptions.timeFormat);
 	}
 
 	getViewMode(): string {
@@ -128,9 +129,9 @@ export default class LualinePlugin extends Plugin {
 
 	updateComponent(component: LualineItem) {
 		if (!this.settings.components.left.includes(component) && !this.settings.components.right.includes(component)) return;
-		const label = this.getComponentLabel(component);
 		this.app.workspace.iterateAllLeaves((leaf) => {
 			leaf.view.containerEl.querySelectorAll<HTMLElement>(`.lualine-bar .lualine-${component}`).forEach((el) => {
+				const label = this.getComponentLabel(component, leaf);
 				el.setText(label);
 				if (component === LualineItem.VimMode) el.setAttr("data-mode", label);
 			});
@@ -159,14 +160,14 @@ export default class LualinePlugin extends Plugin {
 		leftComponents.forEach((component, index) => {
 			const el = leftSide.createEl("p", {
 				cls: `lualine-${component} ${index == 0 && "first-item"}`,
-				text: this.getComponentLabel(component),
+				text: this.getComponentLabel(component, leaf),
 			});
 			if (component === LualineItem.VimMode) el.setAttr("data-mode", el.textContent ?? "");
 		});
 		rightComponents.forEach((component, index) => {
 			const el = rightSide.createEl("p", {
 				cls: `lualine-${component} ${index == rightComponents.length - 1 && "last-item"}`,
-				text: this.getComponentLabel(component),
+				text: this.getComponentLabel(component, leaf),
 			});
 			if (component === LualineItem.VimMode) el.setAttr("data-mode", el.textContent ?? "");
 		});
@@ -188,24 +189,24 @@ export default class LualinePlugin extends Plugin {
 		});
 	}
 
-	getComponentLabel(component: LualineItem): string {
+	getComponentLabel(component: LualineItem, leaf?: WorkspaceLeaf): string {
 		switch (component) {
 			case LualineItem.VimMode:
 				return this.getVimMode();
 			case LualineItem.FileName:
-				return this.getFileName();
+				return this.getFileName(leaf);
 			case LualineItem.WordCount:
-				return this.getWordCount() + " words";
+				return formatCount(this.getWordCount(), "words", this.settings.componentOptions.compactCounts);
 			case LualineItem.Date:
 				return this.getDate();
 			case LualineItem.Time:
 				return this.getTime();
 			case LualineItem.CharCount:
-				return this.getCharCount() + " chars";
+				return formatCount(this.getCharCount(), "chars", this.settings.componentOptions.compactCounts);
 			case LualineItem.ViewMode:
 				return this.getViewMode();
 			case LualineItem.Backlinks:
-				return this.getBacklinks() + " backlinks";
+				return formatCount(this.getBacklinks(), "backlinks", this.settings.componentOptions.compactCounts);
 		}
 	}
 
@@ -224,6 +225,7 @@ export default class LualinePlugin extends Plugin {
 		this.settings.colourScheme = resolveColourScheme(this.settings.colourScheme);
 		this.settings.components = resolveLayout(this.settings.components);
 		this.settings.customColours = normaliseCustomColours(this.settings.customColours);
+		this.settings.componentOptions = resolveComponentOptions(this.settings.componentOptions);
 	}
 
 	async saveSettings() {
@@ -233,6 +235,7 @@ export default class LualinePlugin extends Plugin {
 				left: [...this.settings.components.left],
 				right: [...this.settings.components.right],
 			},
+			componentOptions: { ...this.settings.componentOptions },
 		};
 		this.saveQueue = this.saveQueue.catch(() => {}).then(() => this.saveData(snapshot));
 		await this.saveQueue;

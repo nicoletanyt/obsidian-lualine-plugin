@@ -13,12 +13,16 @@ import type { CustomColours } from "./theme-customisation";
 import { COLOUR_FIELDS } from "./theme-customisation";
 import { addColourSetting } from "./ui/colour-setting";
 import { readPresetColours } from "./ui/preset-colours";
+import { DEFAULT_COMPONENT_OPTIONS } from "./component-options";
+import type { ComponentOptions } from "./component-options";
+import { renderComponentOptions } from "./ui/component-options";
 
 export interface PluginSettings {
 	showFileExt: boolean;
 	colourScheme: ColourScheme;
 	components: ComponentLayout;
 	customColours: CustomColours;
+	componentOptions: ComponentOptions;
 }
 
 export const DEFAULT_SETTINGS: PluginSettings = {
@@ -26,6 +30,7 @@ export const DEFAULT_SETTINGS: PluginSettings = {
 	colourScheme: DEFAULT_COLOUR_SCHEME,
 	components: DEFAULT_LAYOUT,
 	customColours: {},
+	componentOptions: DEFAULT_COMPONENT_OPTIONS,
 };
 
 export class LualineSettingsTab extends PluginSettingTab {
@@ -34,6 +39,7 @@ export class LualineSettingsTab extends PluginSettingTab {
 		theme: true,
 		colours: false,
 		layout: false,
+		options: false,
 	};
 
 	constructor(app: App, plugin: LualinePlugin) {
@@ -112,5 +118,8 @@ export class LualineSettingsTab extends PluginSettingTab {
 
 		const layoutSection = createSection("layout", "Custom layout");
 		renderComponentSettings(layoutSection, this.plugin);
+
+		const optionsSection = createSection("options", "Component options");
+		renderComponentOptions(optionsSection, this.plugin);
 	}
 }

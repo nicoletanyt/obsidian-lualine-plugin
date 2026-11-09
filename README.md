@@ -18,9 +18,13 @@ side. Remove a component with the × button and add it again with **Add componen
 Changes apply immediately and are saved automatically. Select **Reset layout**
 to restore the default arrangement.
 
+Under **Component options**, choose whether the file name shows its vault-relative
+path and extension, select date and time formats, and optionally show counts
+without their labels. Existing displays remain the default.
+
 ### Custom colours
 
-Under **Colours → Custom colours**, use a colour picker or enter a hex colour (`#aabbcc`
+Under **Custom colour**, use a colour picker or enter a hex colour (`#aabbcc`
 or `#abc`) to override the bar, filename, and Vim mode colours. The hex field's
 placeholder shows the preset colour; leaving it blank inherits that colour.
 Invalid values show an error and do not change the bar.
